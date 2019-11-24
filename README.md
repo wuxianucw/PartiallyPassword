@@ -8,13 +8,9 @@ PartiallyPassword Plugin for Typecho supports the creation of a password for a s
 
 ### A. 直接下载 Download directly
 
-~~访问本项目的Release页面，下载最新的Release版本，并将其移动到 Typecho 插件目录下。~~
+访问本项目的Release页面，下载最新的Release版本，解压后将其中的文件夹重命名为`PartiallyPassword`并移动到 Typecho 插件目录下。
 
-~~Visit the Release page of our project, download the latest Release version, and then move it to the Typecho plugin directory.~~
-
-暂不提供。
-
-Not support yet.
+Visit the Release page of our project, download the latest Release version, unzip it, and then rename the folder to `PartiallyPassword` and move it to the Typecho plugin directory.
 
 ### B. 从仓库克隆 Clone from repo
 
