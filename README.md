@@ -98,3 +98,8 @@ For the above example, configure three passwords to achieve different passwords 
 
 - 此版本尚未对基于`text`的调用进行内容替换操作，部分依赖这一属性的功能中，加密内容仍然有可能暴露，此时请向我提出issue，我会尽快在后续版本中修复相关问题。  
 This version has not yet done a content replacement operation based on the `text` call. In some functions that depend on this property, the encrypted content may still be exposed. Please submit an issue to me at this time, I will fix the related issue in the subsequent version as soon as possible.
+
+## TODO List
+
+- [ ] 在`Widget_Abstract_Contents`的`excerpt`下挂接函数，屏蔽所有`[ppblock]`以及其中的内容，不判断cookie。
+- [ ] 寻找一个方案可以直接操作`$widget->text`取出的内容，实现完美屏蔽。
