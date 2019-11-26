@@ -101,5 +101,7 @@ This version has not yet done a content replacement operation based on the `text
 
 ## TODO List
 
-- [ ] 在`Widget_Abstract_Contents`的`excerpt`下挂接函数，屏蔽所有`[ppblock]`以及其中的内容，不判断cookie。
+- [x] 在`Widget_Abstract_Contents`的`excerpt`下挂接函数，屏蔽所有`[ppblock]`以及其中的内容，不判断cookie。
 - [ ] 寻找一个方案可以直接操作`$widget->text`取出的内容，实现完美屏蔽。
+- [ ] 现有的鉴权逻辑较为不完善，应增加提交密码时的后端相关处理，并合理优化流程。
+- [ ] 默认外观需要优化，包括样式和插入位置。

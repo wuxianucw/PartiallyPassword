@@ -5,7 +5,7 @@ if(!defined('__TYPECHO_ROOT_DIR__'))exit;
  * 
  * @package PartiallyPassword
  * @author wuxianucw
- * @version 1.0.0
+ * @version 1.1.0
  * @link https://ucw.moe
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
@@ -19,6 +19,7 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
     public static function activate(){
         Typecho_Plugin::factory('Widget_Abstract_Contents')->contentEx=array('PartiallyPassword_Plugin','render');
         Typecho_Plugin::factory('Widget_Contents_Post_Edit')->getDefaultFieldItems=array('PartiallyPassword_Plugin','pluginFields');
+        Typecho_Plugin::factory('Widget_Abstract_Contents')->excerpt=array('PartiallyPassword_Plugin','escapeExcerpt');
     }
     
     /**
@@ -151,11 +152,27 @@ TEXT;
     }
 
     /**
+     * 隐藏摘要
+     * 
+     * @access public
+     * @param string $text
+     * @param Widget_Abstract_Contents $widget
+     * @return string
+     */
+    public static function escapeExcerpt($text,$widget){
+        if($widget->fields->pp_isEnabled){
+            if(strpos($text,'[ppblock')!==false){
+                $text=preg_replace('/'.self::get_shortcode_regex('ppblock').'/','',$text);
+            }
+        }
+        return $text;
+    }
+
+    /**
      * 获取匹配短代码的正则表达式
      * @param string $tagnames
      * @return string
      * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php#L254
-
      */
     public static function get_shortcode_regex( $tagname ) {
         $tagregexp = preg_quote( $tagname );
