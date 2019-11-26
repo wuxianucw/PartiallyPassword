@@ -41,14 +41,29 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
      */
     public static function config(Typecho_Widget_Helper_Form $form){
         $default=<<<TEXT
+<style>
+.pp-block{text-align:center;border-radius:3px;background-color:rgba(0, 0, 0, 0.45);padding:20px 0 20px 0;}
+.pp-block>p{margin:0!important;}
+.pp-block>p>input{height:24px;border:1px solid #fff;background-color:transparent;width:50%;border-radius:3px;color:#fff;text-align:center;}
+.pp-block>p>input::placeholder{color:#fff;}
+.pp-block>p>input::-webkit-input-placeholder{color:#fff;}
+.pp-block>p>input::-moz-placeholder{color:#fff;}
+.pp-block>p>input:-moz-placeholder{color:#fff;}
+.pp-block>p>input:-ms-input-placeholder{color:#fff;}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/jquery.cookie@1.4.1/jquery.cookie.min.js"></script>
 <script>
 //need jQuery ans jQuery.cookie
-function PP_set(id,uid){
-    let p=$("[name=pp-password-"+uid+"]").val();
-    if(!p)return false;
-    $.cookie("PartiallyPassword"+id,p);
-}
+$("div.pp-block>p>input").keypress(function(e){
+    if(e.which==13){
+        let id=$(this).data('id');
+        let p=$(this).val();
+        if(!p)return false;
+        $.cookie("PartiallyPassword"+id,p);
+        if($.pjax!=undefined)$.pjax.reload('#content',{fragment:'#content',timeout:8000});
+        else window.location.reload();
+    }
+});
 </script>
 TEXT;
         $tips=<<<TEXT
@@ -59,14 +74,9 @@ TEXT;
 TEXT;
         $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('common',NULL,$default,_t('页面公共HTML'),$tips));
         $default=<<<TEXT
-<div style="border:1px solid #000;text-align:center">
-<p>请输入密码查看隐藏内容</p>
+<div class="pp-block">
 <p>
-<input name="pp-password-{uniqueId}" type="password">
-<a href="{currentPage}" onclick="PP_set({id},{uniqueId})" style="outline:none;color:#fff;background-color:#66ccff;padding:2px 5px 2px 5px;border-radius:1px">提交</a>
-</p>
-<p>
-{additionalContent}
+<input name="pp-password-{uniqueId}" type="password" placeholder="{additionalContent}" data-id="{id}" data-uid="{uniqueId})">
 </p>
 </div>
 TEXT;

@@ -104,4 +104,4 @@ This version has not yet done a content replacement operation based on the `text
 - [x] 在`Widget_Abstract_Contents`的`excerpt`下挂接函数，屏蔽所有`[ppblock]`以及其中的内容，不判断cookie。(Since v1.1.0)
 - [ ] 寻找一个方案可以直接操作`$widget->text`取出的内容，实现完美屏蔽。
 - [ ] 现有的鉴权逻辑较为不完善，应增加提交密码时的后端相关处理，并合理优化流程。
-- [ ] 默认外观需要优化，包括样式和插入位置。
+- [x] ~~默认外观需要优化，包括样式和插入位置。~~ 已经完成优化，现在的默认样式是一套极简风格的密码输入框。插入位置暂时没有特别有效的优化方案。(Since v1.1.1)
