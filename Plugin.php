@@ -111,40 +111,38 @@ TEXT;
      */
     public static function render($content,Widget_Abstract_Contents $widget){
         if($widget->fields->pp_isEnabled){
-            if(strpos($content,'[ppblock')!==false){
-                @$sep=$widget->fields->pp_sep;
-                @$pwds=$widget->fields->pp_passwords;
-                if($sep)$pwds=explode($sep,$pwds);
-                else $pwds=array($pwds);
-                $mod=count($pwds);
-                if(!$mod){
-                    $mod=1;
-                    $pwds=array('');
-                }
-                $content=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches)use($widget,$pwds,$mod){
-                    static $count=0;
-                    if($matches[1]=='['&&$matches[6]==']')return substr($matches[0],1,-1);//不解析类似 [[ppblock]] 双重括号的代码
-                    $now=$count%$mod;
-                    $count++;
-                    $attr=htmlspecialchars_decode($matches[3]);//还原转义前的参数列表
-                    $attrs=self::shortcode_parse_atts($attr);//获取短代码的参数
-                    $ex='';
-                    if(is_array($attrs)&&isset($attrs['ex']))$ex=$attrs['ex'];
-                    $inner=$matches[5];
-                    if($pwds[$now]=='')return $inner;
-                    $input=$_COOKIE['PartiallyPassword'.$now];
-                    if($input&&$input===$pwds[$now])return $inner;
-                    else{
-                        @$placeholder=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->placeholder;
-                        if(!$placeholder)$placeholder='<div><strong style="color:red">请配置密码区域HTML！</strong></div>';
-                        $placeholder=str_replace(array('{id}','{uniqueId}','{currentPage}','{additionalContent}'),array($now,$count,$widget->permalink,$ex),$placeholder);
-                        return $placeholder;
-                    }
-                },$content);
-                @$common_content=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->common;
-                if(!$common_content)$common_content='';
-                $content.=str_replace(array('{currentPage}'),array($widget->permalink),$common_content);
+            @$sep=$widget->fields->pp_sep;
+            @$pwds=$widget->fields->pp_passwords;
+            if($sep)$pwds=explode($sep,$pwds);
+            else $pwds=array($pwds);
+            $mod=count($pwds);
+            if(!$mod){
+                $mod=1;
+                $pwds=array('');
             }
+            $content=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches)use($widget,$pwds,$mod){
+                static $count=0;
+                if($matches[1]=='['&&$matches[6]==']')return substr($matches[0],1,-1);//不解析类似 [[ppblock]] 双重括号的代码
+                $now=$count%$mod;
+                $count++;
+                $attr=htmlspecialchars_decode($matches[3]);//还原转义前的参数列表
+                $attrs=self::shortcode_parse_atts($attr);//获取短代码的参数
+                $ex='';
+                if(is_array($attrs)&&isset($attrs['ex']))$ex=$attrs['ex'];
+                $inner=$matches[5];
+                if($pwds[$now]=='')return $inner;
+                $input=$_COOKIE['PartiallyPassword'.$now];
+                if($input&&$input===$pwds[$now])return $inner;
+                else{
+                    @$placeholder=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->placeholder;
+                    if(!$placeholder)$placeholder='<div><strong style="color:red">请配置密码区域HTML！</strong></div>';
+                    $placeholder=str_replace(array('{id}','{uniqueId}','{currentPage}','{additionalContent}'),array($now,$count,$widget->permalink,$ex),$placeholder);
+                    return $placeholder;
+                }
+            },$content);
+            @$common_content=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->common;
+            if(!$common_content)$common_content='';
+            $content.=str_replace(array('{currentPage}'),array($widget->permalink),$common_content);
         }
         return $content;
     }
@@ -171,9 +169,7 @@ TEXT;
      */
     public static function escapeExcerpt($text,$widget){
         if($widget->fields->pp_isEnabled){
-            if(strpos($text,'[ppblock')!==false){
-                $text=preg_replace('/'.self::get_shortcode_regex('ppblock').'/','',$text);
-            }
+            $text=preg_replace('/'.self::get_shortcode_regex('ppblock').'/','',$text);
         }
         return $text;
     }
