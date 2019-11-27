@@ -169,7 +169,10 @@ TEXT;
      */
     public static function escapeExcerpt($text,$widget){
         if($widget->fields->pp_isEnabled){
-            $text=preg_replace('/'.self::get_shortcode_regex('ppblock').'/','',$text);
+            $text=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches){
+                if($matches[1]=='['&&$matches[6]==']')return substr($matches[0],1,-1);//不解析类似 [[ppblock]] 双重括号的代码
+                return '';
+            },$text);
         }
         return $text;
     }
