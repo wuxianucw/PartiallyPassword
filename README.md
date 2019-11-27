@@ -64,6 +64,10 @@ something that requires password
 
 Additional Content set by `ex` attribute will be displayed at the password-inputting area.
 
+如果你仍然想书写一段`[ppblock]...[/ppblock]`形式的文本，而不希望它被解析，请使用`[[ppblock]...[/ppblock]]`，两侧多余的方括号会被自动移除。
+
+If you still need a text like `[ppblock]...[/ppblock]`, please use `[[ppblock]...[/ppblock]]`. Extra square brackets are automatically removed.
+
 #### 插入多个区块 Multiple blocks
 
 ```text
@@ -98,6 +102,8 @@ For the above example, configure three passwords to achieve different passwords 
 
 - 此版本尚未对基于`text`的调用进行内容替换操作，部分依赖这一属性的功能中，加密内容仍然有可能暴露，此时请向我提出issue，我会尽快在后续版本中修复相关问题。  
 This version has not yet done a content replacement operation based on the `text` call. In some functions that depend on this property, the encrypted content may still be exposed. Please submit an issue to me at this time, I will fix the related issue in the subsequent version as soon as possible.
+- 请勿不成对或嵌套地使用`[ppblock]`标记，它的展现无法预期。  
+Do not use the `[ppblock]` tag unpaired or nested, it will not be displayed as expected.
 
 ## TODO List
 
