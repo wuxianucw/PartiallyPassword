@@ -131,7 +131,7 @@ TEXT;
                 if(is_array($attrs)&&isset($attrs['ex']))$ex=$attrs['ex'];
                 $inner=$matches[5];
                 if($pwds[$now]=='')return $inner;
-                $input=$_COOKIE['PartiallyPassword'.$now];
+                $input=isset($_COOKIE['PartiallyPassword'.$now])?$_COOKIE['PartiallyPassword'.$now]:'';
                 if($input&&$input===$pwds[$now])return $inner;
                 else{
                     @$placeholder=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->placeholder;
