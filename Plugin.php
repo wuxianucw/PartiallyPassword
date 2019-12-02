@@ -5,7 +5,7 @@ if(!defined('__TYPECHO_ROOT_DIR__'))exit;
  * 
  * @package PartiallyPassword
  * @author wuxianucw
- * @version 1.1.1
+ * @version 2.0.0
  * @link https://ucw.moe
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
@@ -20,6 +20,7 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
         Typecho_Plugin::factory('Widget_Abstract_Contents')->contentEx=array('PartiallyPassword_Plugin','render');
         Typecho_Plugin::factory('Widget_Contents_Post_Edit')->getDefaultFieldItems=array('PartiallyPassword_Plugin','pluginFields');
         Typecho_Plugin::factory('Widget_Abstract_Contents')->excerpt=array('PartiallyPassword_Plugin','escapeExcerpt');
+        Typecho_Plugin::factory('Widget_Archive')->singleHandle=array('PartiallyPassword_Plugin','handleSubmit');
     }
     
     /**
@@ -131,7 +132,7 @@ TEXT;
                 if(is_array($attrs)&&isset($attrs['ex']))$ex=$attrs['ex'];
                 $inner=$matches[5];
                 if($pwds[$now]=='')return $inner;
-                $input=isset($_COOKIE['PartiallyPassword'.$now])?$_COOKIE['PartiallyPassword'.$now]:'';
+                $input=Typecho_Cookie::get("PartiallyPassword_{$widget->cid}_{$now}",'');
                 if($input&&$input===$pwds[$now])return $inner;
                 else{
                     @$placeholder=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->placeholder;
@@ -151,7 +152,8 @@ TEXT;
      * 插件自定义字段
      * 
      * @access public
-     * @param $layout
+     * @param mixed $layout
+     * @return void
      */
     public static function pluginFields($layout){
         $layout->addItem(new Typecho_Widget_Helper_Form_Element_Select('pp_isEnabled',array(0=>'关闭',1=>'开启'),0,_t('是否开启文章部分加密'),'是否对这篇文章启用部分加密功能'));
@@ -175,6 +177,24 @@ TEXT;
             },$text);
         }
         return $text;
+    }
+
+    /**
+     * 处理密码提交
+     * 
+     * @access public
+     * @param Widget_Archive $archive
+     * @param Typecho_Db_Query $select
+     * @return void
+     */
+    public static function handleSubmit($archive,$select){
+        if(!$archive->is('page')&&!$archive->is('post'))return;
+        if($archive->fields->pp_isEnable&&$archive->request->isPost()&&isset($archive->request->partiallyPassword)){
+            $archive->security->protect();
+            $pid=isset($archive->request->pid)?intval($archive->request->pid):0;
+            if($pid<0)return;
+            Typecho_Cookie::set("PartiallyPassword_{$archive->cid}_{$pid}",$archive->request->partiallyPassword);
+        }
     }
 
     /**
