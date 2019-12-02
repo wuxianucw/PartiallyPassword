@@ -133,6 +133,7 @@ TEXT;
                 $inner=$matches[5];
                 if($pwds[$now]=='')return $inner;
                 $input=Typecho_Cookie::get("PartiallyPassword_{$widget->cid}_{$now}",'');
+                if($input)$input=md5($input);
                 if($input&&$input===$pwds[$now])return $inner;
                 else{
                     @$placeholder=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->placeholder;
@@ -193,7 +194,7 @@ TEXT;
             $archive->security->protect();
             $pid=isset($archive->request->pid)?intval($archive->request->pid):0;
             if($pid<0)return;
-            Typecho_Cookie::set("PartiallyPassword_{$archive->cid}_{$pid}",$archive->request->partiallyPassword);
+            Typecho_Cookie::set("PartiallyPassword_{$archive->cid}_{$pid}",md5($archive->request->partiallyPassword));
         }
     }
 
