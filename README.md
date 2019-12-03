@@ -14,6 +14,9 @@ Visit the Release page of our project, download the latest Release version, unzi
 
 ### B. 从仓库克隆 Clone from repo
 
+> [!] 请勿直接克隆当前master分支，因为其中包含尚未完成的新功能。  
+[!] Do not clone the current master branch directly, as it contains new features that have not yet been completed.
+
 在 Typecho 插件目录下启动终端，执行命令即可。
 
 Start the terminal in the Typecho plugin directory and execute the command below.
