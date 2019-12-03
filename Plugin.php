@@ -17,7 +17,7 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
      * @throws Typecho_Plugin_Exception
      */
     public static function activate(){
-        Typecho_Plugin::factory('Widget_Abstract_Contents')->contentEx=array('PartiallyPassword_Plugin','render');
+        Typecho_Plugin::factory('Widget_Abstract_Contents')->filter=array('PartiallyPassword_Plugin','render');
         Typecho_Plugin::factory('Widget_Contents_Post_Edit')->getDefaultFieldItems=array('PartiallyPassword_Plugin','pluginFields');
         Typecho_Plugin::factory('Widget_Abstract_Contents')->excerpt=array('PartiallyPassword_Plugin','escapeExcerpt');
         Typecho_Plugin::factory('Widget_Archive')->singleHandle=array('PartiallyPassword_Plugin','handleSubmit');
@@ -106,14 +106,14 @@ TEXT;
      * 插件实现方法
      * 
      * @access public
-     * @param string $content
-     * @param Widget_Abstract_Contents $widget
+     * @param array $value
+     * @param Widget_Abstract_Contents $contents
      * @return string
      */
-    public static function render($content,Widget_Abstract_Contents $widget){
-        if($widget->fields->pp_isEnabled){
-            @$sep=$widget->fields->pp_sep;
-            @$pwds=$widget->fields->pp_passwords;
+    public static function render($value,Widget_Abstract_Contents $contents){
+        if($contents->fields->pp_isEnabled){
+            @$sep=$contents->fields->pp_sep;
+            @$pwds=$contents->fields->pp_passwords;
             if($sep)$pwds=explode($sep,$pwds);
             else $pwds=array($pwds);
             $mod=count($pwds);
@@ -121,7 +121,7 @@ TEXT;
                 $mod=1;
                 $pwds=array('');
             }
-            $content=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches)use($widget,$pwds,$mod){
+            $content=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches)use($contents,$pwds,$mod){
                 static $count=0;
                 if($matches[1]=='['&&$matches[6]==']')return substr($matches[0],1,-1);//不解析类似 [[ppblock]] 双重括号的代码
                 $now=$count%$mod;
@@ -132,19 +132,19 @@ TEXT;
                 if(is_array($attrs)&&isset($attrs['ex']))$ex=$attrs['ex'];
                 $inner=$matches[5];
                 if($pwds[$now]=='')return $inner;
-                $input=Typecho_Cookie::get("PartiallyPassword_{$widget->cid}_{$now}",'');
+                $input=Typecho_Cookie::get("PartiallyPassword_{$contents->cid}_{$now}",'');
                 if($input)$input=md5($input);
                 if($input&&$input===$pwds[$now])return $inner;
                 else{
                     @$placeholder=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->placeholder;
                     if(!$placeholder)$placeholder='<div><strong style="color:red">请配置密码区域HTML！</strong></div>';
-                    $placeholder=str_replace(array('{id}','{uniqueId}','{currentPage}','{additionalContent}'),array($now,$count,$widget->permalink,$ex),$placeholder);
+                    $placeholder=str_replace(array('{id}','{uniqueId}','{currentPage}','{additionalContent}'),array($now,$count,$contents->permalink,$ex),$placeholder);
                     return $placeholder;
                 }
             },$content);
             @$common_content=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->common;
             if(!$common_content)$common_content='';
-            $content.=str_replace(array('{currentPage}'),array($widget->permalink),$common_content);
+            $content.=str_replace(array('{currentPage}'),array($contents->permalink),$common_content);
         }
         return $content;
     }
@@ -167,11 +167,11 @@ TEXT;
      * 
      * @access public
      * @param string $text
-     * @param Widget_Abstract_Contents $widget
+     * @param Widget_Abstract_Contents $contents
      * @return string
      */
-    public static function escapeExcerpt($text,$widget){
-        if($widget->fields->pp_isEnabled){
+    public static function escapeExcerpt($text,Widget_Abstract_Contents $contents){
+        if($contents->fields->pp_isEnabled){
             $text=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches){
                 if($matches[1]=='['&&$matches[6]==']')return substr($matches[0],1,-1);//不解析类似 [[ppblock]] 双重括号的代码
                 return '';
