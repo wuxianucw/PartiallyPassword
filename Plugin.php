@@ -17,10 +17,12 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
      * @throws Typecho_Plugin_Exception
      */
     public static function activate(){
+        Typecho_Plugin::factory('Widget_Abstract_Contents')->excerpt=array('PartiallyPassword_Plugin','escapeExcerpt');
         Typecho_Plugin::factory('Widget_Abstract_Contents')->filter=array('PartiallyPassword_Plugin','render');
         Typecho_Plugin::factory('Widget_Contents_Post_Edit')->getDefaultFieldItems=array('PartiallyPassword_Plugin','pluginFields');
-        Typecho_Plugin::factory('Widget_Abstract_Contents')->excerpt=array('PartiallyPassword_Plugin','escapeExcerpt');
         Typecho_Plugin::factory('Widget_Archive')->singleHandle=array('PartiallyPassword_Plugin','handleSubmit');
+        Typecho_Plugin::factory('Widget_Archive')->header=array('PartiallyPassword_Plugin','header');
+        Typecho_Plugin::factory('Widget_Archive')->footer=array('PartiallyPassword_Plugin','footer');
     }
     
     /**
@@ -52,6 +54,16 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
 .pp-block>p>input:-moz-placeholder{color:#fff;}
 .pp-block>p>input:-ms-input-placeholder{color:#fff;}
 </style>
+TEXT;
+        $tips=<<<TEXT
+将插入在页头(header)。可以使用的变量包括：
+<ul>
+<li><code>{currentPage}</code>：当前页面URL</li>
+<li><code>{targetUrl}</code>：POST提交接口页面URL</li>
+</ul>
+TEXT;
+        $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('header',NULL,$default,_t('自定义页头HTML'),$tips));
+        $default=<<<TEXT
 <script src="https://cdn.jsdelivr.net/npm/jquery.cookie@1.4.1/jquery.cookie.min.js"></script>
 <script>
 //need jQuery ans jQuery.cookie
@@ -68,12 +80,13 @@ $("div.pp-block>p>input").keypress(function(e){
 </script>
 TEXT;
         $tips=<<<TEXT
-将插入在文章末尾。可以使用的变量包括：
+将插入在页脚(footer)。可以使用的变量包括：
 <ul>
 <li><code>{currentPage}</code>：当前页面URL</li>
+<li><code>{targetUrl}</code>：POST提交接口页面URL</li>
 </ul>
 TEXT;
-        $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('common',NULL,$default,_t('页面公共HTML'),$tips));
+        $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('footer',NULL,$default,_t('自定义页脚HTML'),$tips));
         $default=<<<TEXT
 <div class="pp-block">
 <p>
@@ -86,8 +99,9 @@ TEXT;
 <ul>
 <li><code>{id}</code>：当前页面加密区块编号</li>
 <li><code>{uniqueId}</code>：当前页面加密区块唯一编号</li>
-<li><code>{currentPage}</code>：当前页面URL</li>
 <li><code>{additionalContent}</code>：附加信息</li>
+<li><code>{currentPage}</code>：当前页面URL</li>
+<li><code>{targetUrl}</code>：POST提交接口页面URL</li>
 </ul>
 TEXT;
         $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('placeholder',NULL,$default,_t('密码区域HTML'),$tips));
@@ -102,6 +116,37 @@ TEXT;
      */
     public static function personalConfig(Typecho_Widget_Helper_Form $form){}
     
+    /**
+     * 自定义输出header
+     * 
+     * @access public
+     * @param string $header
+     * @param Widget_Archive $archive
+     * @return void
+     */
+    public static function header($header,Widget_Archive $archive){
+        if(!$archive->is('page')&&!$archive->is('post'))return;
+        if($archive->fields->pp_isEnabled){
+            @$header_html=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->header;
+            if($header_html)echo str_replace(array('{currentPage}'),array($archive->permalink),$header_html);
+        }
+    }
+
+    /**
+     * 自定义输出footer
+     * 
+     * @access public
+     * @param Widget_Archive $archive
+     * @return void
+     */
+    public static function footer(Widget_Archive $archive){
+        if(!$archive->is('page')&&!$archive->is('post'))return;
+        if($archive->fields->pp_isEnabled){
+            @$footer_html=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->footer;
+            if($footer_html)echo str_replace(array('{currentPage}'),array($archive->permalink),$footer_html);
+        }
+    }
+
     /**
      * 插件实现方法
      * 
@@ -121,7 +166,10 @@ TEXT;
                 $mod=1;
                 $pwds=array('');
             }
-            $content=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches)use($contents,$pwds,$mod){
+            @$placeholder=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->placeholder;
+            if(!$placeholder)$placeholder='<div><strong style="color:red">请配置密码区域HTML！</strong></div>';
+            if($value['isMarkdown'])$placeholder="\n!!!\n{$placeholder}\n!!!\n";
+            $value['text']=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches)use($contents,$pwds,$mod,$placeholder){
                 static $count=0;
                 if($matches[1]=='['&&$matches[6]==']')return substr($matches[0],1,-1);//不解析类似 [[ppblock]] 双重括号的代码
                 $now=$count%$mod;
@@ -136,17 +184,12 @@ TEXT;
                 if($input)$input=md5($input);
                 if($input&&$input===$pwds[$now])return $inner;
                 else{
-                    @$placeholder=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->placeholder;
-                    if(!$placeholder)$placeholder='<div><strong style="color:red">请配置密码区域HTML！</strong></div>';
                     $placeholder=str_replace(array('{id}','{uniqueId}','{currentPage}','{additionalContent}'),array($now,$count,$contents->permalink,$ex),$placeholder);
                     return $placeholder;
                 }
-            },$content);
-            @$common_content=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->common;
-            if(!$common_content)$common_content='';
-            $content.=str_replace(array('{currentPage}'),array($contents->permalink),$common_content);
+            },$value['text']);
         }
-        return $content;
+        return $value;
     }
 
     /**
@@ -188,7 +231,7 @@ TEXT;
      * @param Typecho_Db_Query $select
      * @return void
      */
-    public static function handleSubmit($archive,$select){
+    public static function handleSubmit(Widget_Archive $archive,Typecho_Db_Query $select){
         if(!$archive->is('page')&&!$archive->is('post'))return;
         if($archive->fields->pp_isEnable&&$archive->request->isPost()&&isset($archive->request->partiallyPassword)){
             $archive->security->protect();
