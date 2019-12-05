@@ -108,7 +108,7 @@ Do not use the `[ppblock]` tag unpaired or nested, it will not be displayed as e
 
 ## TODO List
 
-- [x] 在`Widget_Abstract_Contents`的`excerpt`下挂接函数，屏蔽所有`[ppblock]`以及其中的内容，不判断cookie。(Since v1.1.0)
+- [x] 在`Widget_Abstract_Contents`的`excerpt`下挂接函数，屏蔽所有`[ppblock]`以及其中的内容，不判断Cookie。(Since v1.1.0)
 - [x] ~~寻找一个方案可以直接操作`$widget->text`取出的内容，实现完美屏蔽。~~ 已经更改为在`Widget_Abstract_Contents`的`filter`下挂接主函数，这样操作后从Widget中取出的数据已经全部进行了过滤，除非直接读取数据库，否则理论上不存在加密区块不解析的情形。(Since v2.0.0)
 - [x] ~~现有的鉴权逻辑较为不完善，应增加提交密码时的后端相关处理，并合理优化流程。~~ 已经完全交由后端处理Cookie，流程变更为直接向文章页面POST数据。(Since v2.0.0)
 - [x] ~~默认外观需要优化，包括样式和插入位置。~~ 已经完成优化，现在的默认样式是一套极简风格的密码输入框。插入位置暂时没有特别有效的优化方案。(Since v1.1.1)
