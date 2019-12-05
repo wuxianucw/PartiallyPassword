@@ -10,6 +10,29 @@ if(!defined('__TYPECHO_ROOT_DIR__'))exit;
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
     /**
+     * request对象
+     * 
+     * @access protected
+     * @var Typecho_Request
+     */
+    protected static $request;
+
+    /**
+     * 构造函数,初始化组件
+     * 
+     * @access public
+     * @param mixed $request request对象
+     * @param mixed $response response对象
+     * @param mixed $params 参数列表
+     * @return void
+     */
+    public function __construct($request,$response,$params=NULL){
+        throw new Exception('eeee');
+        parent::__construct($request,$response,$params);
+        self::$request=$request;
+    }
+
+    /**
      * 激活插件方法,如果激活失败,直接抛出异常
      * 
      * @access public
@@ -17,7 +40,6 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
      * @throws Typecho_Plugin_Exception
      */
     public static function activate(){
-        Typecho_Plugin::factory('Widget_Abstract_Contents')->excerpt=array('PartiallyPassword_Plugin','escapeExcerpt');
         Typecho_Plugin::factory('Widget_Abstract_Contents')->filter=array('PartiallyPassword_Plugin','render');
         Typecho_Plugin::factory('Widget_Contents_Post_Edit')->getDefaultFieldItems=array('PartiallyPassword_Plugin','pluginFields');
         Typecho_Plugin::factory('Widget_Archive')->singleHandle=array('PartiallyPassword_Plugin','handleSubmit');
@@ -46,52 +68,34 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
         $default=<<<TEXT
 <style>
 .pp-block{text-align:center;border-radius:3px;background-color:rgba(0, 0, 0, 0.45);padding:20px 0 20px 0;}
-.pp-block>p{margin:0!important;}
-.pp-block>p>input{height:24px;border:1px solid #fff;background-color:transparent;width:50%;border-radius:3px;color:#fff;text-align:center;}
-.pp-block>p>input::placeholder{color:#fff;}
-.pp-block>p>input::-webkit-input-placeholder{color:#fff;}
-.pp-block>p>input::-moz-placeholder{color:#fff;}
-.pp-block>p>input:-moz-placeholder{color:#fff;}
-.pp-block>p>input:-ms-input-placeholder{color:#fff;}
+.pp-block>form>input{height:24px;border:1px solid #fff;background-color:transparent;width:50%;border-radius:3px;color:#fff;text-align:center;}
+.pp-block>form>input::placeholder{color:#fff;}
+.pp-block>form>input::-webkit-input-placeholder{color:#fff;}
+.pp-block>form>input::-moz-placeholder{color:#fff;}
+.pp-block>form>input:-moz-placeholder{color:#fff;}
+.pp-block>form>input:-ms-input-placeholder{color:#fff;}
 </style>
 TEXT;
         $tips=<<<TEXT
-将插入在页头(header)。可以使用的变量包括：
-<ul>
-<li><code>{currentPage}</code>：当前页面URL</li>
-<li><code>{targetUrl}</code>：POST提交接口页面URL</li>
-</ul>
+将插入在所有页面的页头(header)。
 TEXT;
         $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('header',NULL,$default,_t('自定义页头HTML'),$tips));
         $default=<<<TEXT
-<script src="https://cdn.jsdelivr.net/npm/jquery.cookie@1.4.1/jquery.cookie.min.js"></script>
 <script>
-//need jQuery ans jQuery.cookie
-$("div.pp-block>p>input").keypress(function(e){
-    if(e.which==13){
-        let id=$(this).data('id');
-        let p=$(this).val();
-        if(!p)return false;
-        $.cookie("PartiallyPassword"+id,p);
-        if($.pjax!=undefined)$.pjax.reload('#content',{fragment:'#content',timeout:8000});
-        else window.location.reload();
-    }
-});
+// Powered by wuxianucw
+console.log('PartiallyPassword is enabled.');
 </script>
 TEXT;
         $tips=<<<TEXT
-将插入在页脚(footer)。可以使用的变量包括：
-<ul>
-<li><code>{currentPage}</code>：当前页面URL</li>
-<li><code>{targetUrl}</code>：POST提交接口页面URL</li>
-</ul>
+将插入在所有页面的页脚(footer)。
 TEXT;
         $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('footer',NULL,$default,_t('自定义页脚HTML'),$tips));
         $default=<<<TEXT
 <div class="pp-block">
-<p>
-<input name="pp-password-{uniqueId}" type="password" placeholder="{additionalContent}" data-id="{id}" data-uid="{uniqueId})">
-</p>
+<form action="{targetUrl}" method="post" style="margin:0;">
+<input name="partiallyPassword" type="password" placeholder="{additionalContent}">
+<input name="pid" type="hidden" value="{id}">
+</form>
 </div>
 TEXT;
         $tips=<<<TEXT
@@ -125,11 +129,8 @@ TEXT;
      * @return void
      */
     public static function header($header,Widget_Archive $archive){
-        if(!$archive->is('page')&&!$archive->is('post'))return;
-        if($archive->fields->pp_isEnabled){
-            @$header_html=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->header;
-            if($header_html)echo str_replace(array('{currentPage}'),array($archive->permalink),$header_html);
-        }
+        @$header_html=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->header;
+        if($header_html)echo $header_html;
     }
 
     /**
@@ -140,13 +141,28 @@ TEXT;
      * @return void
      */
     public static function footer(Widget_Archive $archive){
-        if(!$archive->is('page')&&!$archive->is('post'))return;
-        if($archive->fields->pp_isEnabled){
-            @$footer_html=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->footer;
-            if($footer_html)echo str_replace(array('{currentPage}'),array($archive->permalink),$footer_html);
-        }
+        @$footer_html=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->footer;
+        if($footer_html)echo $footer_html;
     }
 
+    /**
+     * 取得请求发送的密码
+     * 
+     * @access private
+     * @param mixed $cid
+     * @param mixed $pid
+     * @param mixed $currentCid
+     * @return string
+     */
+    private static function getRequestPassword($cid,$pid,$currentCid=-1){
+        if($currentCid==-1)$currentCid=$cid;
+        $request=new Typecho_Request();
+        $request_pid=isset($request->pid)?intval($request->pid):0;
+        if($request->isPost()&&isset($request->partiallyPassword)&&$request_pid==$pid)
+            return md5($_POST['partiallyPassword']);
+        return Typecho_Cookie::get("partiallyPassword_{$cid}_{$pid}",'');
+    }
+    
     /**
      * 插件实现方法
      * 
@@ -156,9 +172,17 @@ TEXT;
      * @return string
      */
     public static function render($value,Widget_Abstract_Contents $contents){
-        if($contents->fields->pp_isEnabled){
-            @$sep=$contents->fields->pp_sep;
-            @$pwds=$contents->fields->pp_passwords;
+        if($value['type']!='page'&&$value['type']!='post')return $value;
+        $fields=array();
+        $db=Typecho_Db::get();
+        $rows=$db->fetchAll($db->select()->from('table.fields')->where('cid = ?',$value['cid']));
+        foreach($rows as $row){
+            $fields[$row['name']]=$row[$row['type'].'_value'];
+        }
+        $fields=new Typecho_Config($fields);
+        if($fields->pp_isEnabled){
+            @$sep=$fields->pp_sep;
+            @$pwds=$fields->pp_passwords;
             if($sep)$pwds=explode($sep,$pwds);
             else $pwds=array($pwds);
             $mod=count($pwds);
@@ -166,10 +190,11 @@ TEXT;
                 $mod=1;
                 $pwds=array('');
             }
+            $pwds=array_map('md5',$pwds);
             @$placeholder=Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->placeholder;
             if(!$placeholder)$placeholder='<div><strong style="color:red">请配置密码区域HTML！</strong></div>';
             if($value['isMarkdown'])$placeholder="\n!!!\n{$placeholder}\n!!!\n";
-            $value['text']=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches)use($contents,$pwds,$mod,$placeholder){
+            $value['text']=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches)use($contents,$value,$pwds,$mod,$placeholder){
                 static $count=0;
                 if($matches[1]=='['&&$matches[6]==']')return substr($matches[0],1,-1);//不解析类似 [[ppblock]] 双重括号的代码
                 $now=$count%$mod;
@@ -180,11 +205,10 @@ TEXT;
                 if(is_array($attrs)&&isset($attrs['ex']))$ex=$attrs['ex'];
                 $inner=$matches[5];
                 if($pwds[$now]=='')return $inner;
-                $input=Typecho_Cookie::get("PartiallyPassword_{$contents->cid}_{$now}",'');
-                if($input)$input=md5($input);
+                $input=self::getRequestPassword($value['cid'],$now,$contents->cid);
                 if($input&&$input===$pwds[$now])return $inner;
                 else{
-                    $placeholder=str_replace(array('{id}','{uniqueId}','{currentPage}','{additionalContent}'),array($now,$count,$contents->permalink,$ex),$placeholder);
+                    $placeholder=str_replace(array('{id}','{uniqueId}','{currentPage}','{additionalContent}','{targetUrl}'),array($now,$count,$value['permalink'],$ex,$value['permalink']),$placeholder);
                     return $placeholder;
                 }
             },$value['text']);
@@ -206,24 +230,6 @@ TEXT;
     }
 
     /**
-     * 隐藏摘要
-     * 
-     * @access public
-     * @param string $text
-     * @param Widget_Abstract_Contents $contents
-     * @return string
-     */
-    public static function escapeExcerpt($text,Widget_Abstract_Contents $contents){
-        if($contents->fields->pp_isEnabled){
-            $text=preg_replace_callback('/'.self::get_shortcode_regex('ppblock').'/',function($matches){
-                if($matches[1]=='['&&$matches[6]==']')return substr($matches[0],1,-1);//不解析类似 [[ppblock]] 双重括号的代码
-                return '';
-            },$text);
-        }
-        return $text;
-    }
-
-    /**
      * 处理密码提交
      * 
      * @access public
@@ -233,11 +239,10 @@ TEXT;
      */
     public static function handleSubmit(Widget_Archive $archive,Typecho_Db_Query $select){
         if(!$archive->is('page')&&!$archive->is('post'))return;
-        if($archive->fields->pp_isEnable&&$archive->request->isPost()&&isset($archive->request->partiallyPassword)){
-            $archive->security->protect();
+        if($archive->fields->pp_isEnabled&&$archive->request->isPost()&&isset($archive->request->partiallyPassword)){
             $pid=isset($archive->request->pid)?intval($archive->request->pid):0;
             if($pid<0)return;
-            Typecho_Cookie::set("PartiallyPassword_{$archive->cid}_{$pid}",md5($archive->request->partiallyPassword));
+            Typecho_Cookie::set("partiallyPassword_{$archive->cid}_{$pid}",md5($archive->request->partiallyPassword));
         }
     }
 
