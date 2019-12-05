@@ -10,29 +10,6 @@ if(!defined('__TYPECHO_ROOT_DIR__'))exit;
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
     /**
-     * request对象
-     * 
-     * @access protected
-     * @var Typecho_Request
-     */
-    protected static $request;
-
-    /**
-     * 构造函数,初始化组件
-     * 
-     * @access public
-     * @param mixed $request request对象
-     * @param mixed $response response对象
-     * @param mixed $params 参数列表
-     * @return void
-     */
-    public function __construct($request,$response,$params=NULL){
-        throw new Exception('eeee');
-        parent::__construct($request,$response,$params);
-        self::$request=$request;
-    }
-
-    /**
      * 激活插件方法,如果激活失败,直接抛出异常
      * 
      * @access public
