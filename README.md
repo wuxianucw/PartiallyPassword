@@ -14,8 +14,8 @@ Visit the Release page of our project, download the latest Release version, unzi
 
 ### B. 从仓库克隆 Clone from repo
 
-> [!] 请勿直接克隆当前master分支，因为其中包含尚未完成的新功能。  
-[!] Do not clone the current master branch directly, as it contains new features that have not yet been completed.
+> [!] 请谨慎克隆当前master分支，其中可能包含尚未完成的新功能。  
+[!] Please be careful when cloning the current master branch, as it may contain new features that have not yet been completed.
 
 在 Typecho 插件目录下启动终端，执行命令即可。
 
@@ -33,9 +33,9 @@ Or `Download ZIP` and unzip it, rename the folder to `PartiallyPassword` and mov
 
 ### 初始化 Initialization
 
-启用插件，在设置界面填写`页面公共HTML`和`密码区域HTML`，即完成全部初始化工作。默认填入的HTML是一套非常简单的演示样式，建议根据主题特性进行自定义修改。
+启用插件，即完成全部初始化工作。默认填入的HTML是一套非常简单的演示样式，建议根据主题特性进行自定义修改。
 
-Activate the plugin, fill in the `Page Public HTML` and `Password Area HTML` in the settings page, and that is all initialization work. The default HTML is a very simple presentation style, it is recommended to customize the changes according to your theme features.
+Activate the plugin, and that is all initialization work. The default HTML is a very simple presentation style, it is recommended to customize the changes according to your theme features.
 
 ### 调用方法举例 Samples
 
@@ -103,14 +103,13 @@ For the above example, configure three passwords to achieve different passwords 
 
 ### 提示 Tips
 
-- 此版本尚未对基于`text`的调用进行内容替换操作，部分依赖这一属性的功能中，加密内容仍然有可能暴露，此时请向我提出issue，我会尽快在后续版本中修复相关问题。  
-This version has not yet done a content replacement operation based on the `text` call. In some functions that depend on this property, the encrypted content may still be exposed. Please submit an issue to me at this time, I will fix the related issue in the subsequent version as soon as possible.
 - 请勿不成对或嵌套地使用`[ppblock]`标记，它的展现无法预期。  
 Do not use the `[ppblock]` tag unpaired or nested, it will not be displayed as expected.
 
 ## TODO List
 
 - [x] 在`Widget_Abstract_Contents`的`excerpt`下挂接函数，屏蔽所有`[ppblock]`以及其中的内容，不判断cookie。(Since v1.1.0)
-- [ ] 寻找一个方案可以直接操作`$widget->text`取出的内容，实现完美屏蔽。
-- [ ] 现有的鉴权逻辑较为不完善，应增加提交密码时的后端相关处理，并合理优化流程。
+- [x] ~~寻找一个方案可以直接操作`$widget->text`取出的内容，实现完美屏蔽。~~ 已经更改为在`Widget_Abstract_Contents`的`filter`下挂接主函数，这样操作后从Widget中取出的数据已经全部进行了过滤，除非直接读取数据库，否则理论上不存在加密区块不解析的情形。(Since v2.0.0)
+- [x] ~~现有的鉴权逻辑较为不完善，应增加提交密码时的后端相关处理，并合理优化流程。~~ 已经完全交由后端处理Cookie，流程变更为直接向文章页面POST数据。(Since v2.0.0)
 - [x] ~~默认外观需要优化，包括样式和插入位置。~~ 已经完成优化，现在的默认样式是一套极简风格的密码输入框。插入位置暂时没有特别有效的优化方案。(Since v1.1.1)
+- [ ] 考虑增加加密区块语法支持，后续将可能支持更加复杂的语法。具体方案暂时未定。
