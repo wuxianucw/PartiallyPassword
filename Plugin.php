@@ -5,7 +5,7 @@ if(!defined('__TYPECHO_ROOT_DIR__'))exit;
  * 
  * @package PartiallyPassword
  * @author wuxianucw
- * @version 2.0.0
+ * @version 2.0.1
  * @link https://ucw.moe
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface{
@@ -149,6 +149,11 @@ TEXT;
      * @return string
      */
     public static function render($value,Widget_Abstract_Contents $contents){
+        if(defined('__TYPECHO_ADMIN__')){
+            if($value['authorId']!=$contents->widget('Widget_User')->uid&&!$contents->widget('Widget_User')->pass('editor',true))
+                $value['hidden']=true;
+            return $value;
+        }
         if($value['type']!='page'&&$value['type']!='post')return $value;
         $fields=array();
         $db=Typecho_Db::get();
