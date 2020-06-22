@@ -1,34 +1,36 @@
 # Typecho 文章部分加密插件（PartiallyPassword）
 
+> **当前分支是 dev 分支。如果你不是开发者，请切换到 master 分支。**
+
 Typecho 文章部分加密插件（PartiallyPassword）支持对某一篇文章的特定部分创建密码，访客需要正确输入密码才能查看内容。
 
 ## 安装 Installation
 
-### A. 直接下载 Download directly
+### A. 直接下载
 
 访问本项目的 Release 页面，下载最新的 Release 版本，解压后将其中的文件夹重命名为 `PartiallyPassword` 并移动到 Typecho 插件目录下。
 
-### B. 从仓库克隆 Clone from repo
+### B. 从仓库克隆
 
-> [!] 请谨慎克隆当前 master 分支，其中可能包含尚未完成的新功能。  
+> **[\!]** 当前分支是 dev 分支，请不要直接克隆它。dev 分支常常包含未经充分测试的新功能和可能造成严重后果的破坏性更改。  
 
 在 Typecho 插件目录下启动终端，执行命令即可。
 
 ```bash
-git clone https://github.com/wuxianucw/PartiallyPassword.git
+git clone -b master --single-branch https://github.com/wuxianucw/PartiallyPassword.git
 ```
 
 或下载压缩包（`Download ZIP`）并解压，将其中的文件夹重命名为 `PartiallyPassword` 并移动到 Typecho 插件目录下。
 
 ## 使用方法 Usage
 
-### 初始化 Initialization
+### 初始化
 
 启用插件，即完成全部初始化工作。默认配置是一套非常简单的演示样式，建议根据主题特性进行自定义修改。
 
-### 调用方法举例 Samples
+### 调用方法举例
 
-#### 基础用法 Basic
+#### 基础用法
 
 在书写加密语法之前，请先将对应文章下方“自定义字段”中“是否开启文章部分加密”一项调整为“开启”状态。该项目默认为“关闭”状态，在此情况下，任何加密语法都不会被解析。
 
@@ -56,7 +58,7 @@ something that requires password
 
 如果你仍然想书写一段 `[ppblock]...[/ppblock]` 形式的文本，而不希望它被解析，请使用 `[[ppblock]...[/ppblock]]`，两侧多余的方括号会被自动移除。
 
-#### 插入多个区块 Multiple blocks
+#### 插入多个区块
 
 ```text
 This is a simple demo.
@@ -80,7 +82,7 @@ end
 
 为上例配置 3 个密码，即可达到不同区块使用不同密码的目的。
 
-### 提示 Tips
+### 提示
 
 - 请勿不成对或嵌套地使用 `[ppblock]` 标记，它的展现无法预期。  
 
@@ -91,3 +93,7 @@ end
 - [x] ~~现有的鉴权逻辑较为不完善，应增加提交密码时的后端相关处理，并合理优化流程。~~ 已经完全交由后端处理 Cookie，流程变更为直接向文章页面 POST 数据。（Since v2.0.0）
 - [x] ~~默认外观需要优化，包括样式和插入位置。~~ 已经完成优化，现在的默认样式是一套极简风格的密码输入框。（Since v1.1.1）公共 HTML 的插入位置变更为页头和页脚。（Since v2.0.0）
 - [ ] 考虑增加加密区块语法支持，后续将可能支持更加复杂的语法。具体方案暂时未定。
+
+## In Progress
+
+- 使用 `PasswordHash`

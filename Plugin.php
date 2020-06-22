@@ -42,21 +42,33 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
      * @return void
      */
     public static function config(Typecho_Widget_Helper_Form $form) {
+        /** Referer 检查 */
+        $form->addInput(new Typecho_Widget_Helper_Form_Element_Select(
+            'checkReferer',
+            array(0 => '关闭', 1 => '开启'),
+            1,
+            _t('Referer 检查'),
+            '若开启，将对每个密码请求进行 Referer 检查。'
+        ));
+
+        /** 自定义页头 HTML */
         $default = <<<TEXT
 <style>
-.pp-block{text-align:center;border-radius:3px;background-color:rgba(0, 0, 0, 0.45);padding:20px 0 20px 0;}
-.pp-block>form>input{height:24px;border:1px solid #fff;background-color:transparent;width:50%;border-radius:3px;color:#fff;text-align:center;}
-.pp-block>form>input::placeholder{color:#fff;}
-.pp-block>form>input::-webkit-input-placeholder{color:#fff;}
-.pp-block>form>input::-moz-placeholder{color:#fff;}
-.pp-block>form>input:-moz-placeholder{color:#fff;}
-.pp-block>form>input:-ms-input-placeholder{color:#fff;}
+.pp-block {text-align: center; border-radius:3px; background-color: rgba(0, 0, 0, 0.45); padding: 20px 0 20px 0;}
+.pp-block>form>input {height: 24px; border: 1px solid #fff; background-color: transparent; width: 50%; border-radius: 3px; color: #fff; text-align: center;}
+.pp-block>form>input::placeholder{color: #fff;}
+.pp-block>form>input::-webkit-input-placeholder{color: #fff;}
+.pp-block>form>input::-moz-placeholder{color: #fff;}
+.pp-block>form>input:-moz-placeholder{color: #fff;}
+.pp-block>form>input:-ms-input-placeholder{color: #fff;}
 </style>
 TEXT;
         $tips = <<<TEXT
-将插入在所有页面的页头(header)。
+将插入在所有页面的页头（header）。
 TEXT;
-        $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('header', NULL, $default, _t('自定义页头HTML'), $tips));
+        $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('header', NULL, $default, _t('自定义页头 HTML'), $tips));
+
+        /** 自定义页脚 HTML */
         $default = <<<TEXT
 <script>
 // Powered by wuxianucw
@@ -64,9 +76,11 @@ console.log('PartiallyPassword is enabled.');
 </script>
 TEXT;
         $tips = <<<TEXT
-将插入在所有页面的页脚(footer)。
+将插入在所有页面的页脚（footer）。
 TEXT;
-        $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('footer', NULL, $default, _t('自定义页脚HTML'), $tips));
+        $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('footer', NULL, $default, _t('自定义页脚 HTML'), $tips));
+
+        /** 密码区域 HTML */
         $default = <<<TEXT
 <div class="pp-block">
 <form action="{targetUrl}" method="post" style="margin:0;">
@@ -85,7 +99,7 @@ TEXT;
 <li><code>{targetUrl}</code>：POST提交接口页面URL</li>
 </ul>
 TEXT;
-        $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('placeholder', NULL, $default, _t('密码区域HTML'), $tips));
+        $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('placeholder', NULL, $default, _t('密码区域 HTML'), $tips));
     }
     
     /**
@@ -106,7 +120,7 @@ TEXT;
      * @return void
      */
     public static function header($header,Widget_Archive $archive) {
-        @$header_html = Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->header;
+        @$header_html = Helper::options()->plugin('PartiallyPassword')->header;
         if ($header_html) echo $header_html;
     }
 
@@ -118,7 +132,7 @@ TEXT;
      * @return void
      */
     public static function footer(Widget_Archive $archive) {
-        @$footer_html = Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->footer;
+        @$footer_html = Helper::options()->plugin('PartiallyPassword')->footer;
         if ($footer_html) echo $footer_html;
     }
 
@@ -135,8 +149,11 @@ TEXT;
         if ($currentCid == -1) $currentCid = $cid;
         $request = new Typecho_Request();
         $request_pid = isset($request->pid) ? intval($request->pid) : 0;
-        if ($request->isPost() && isset($request->partiallyPassword) && $request_pid === $pid)
-            return md5($_POST['partiallyPassword']);
+        if ($request->isPost() && isset($request->partiallyPassword) && $request_pid === $pid) {
+            if (@Helper::options()->plugin('PartiallyPassword')->checkReferer)
+                if (stripos($request->getReferer(), Helper::options()->rootUrl) !== 0) return;
+            return (new PasswordHash(8, true))->HashPassword($request->partiallyPassword);
+        }
         return Typecho_Cookie::get("partiallyPassword_{$cid}_{$pid}", '');
     }
     
@@ -172,13 +189,13 @@ TEXT;
                 $mod = 1;
                 $pwds = array('');
             }
-            $pwds = array_map('md5', $pwds);
-            @$placeholder = Typecho_Widget::widget('Widget_Options')->plugin('PartiallyPassword')->placeholder;
+            @$placeholder = Helper::options()->plugin('PartiallyPassword')->placeholder;
             if (!$placeholder) $placeholder = '<div><strong style="color:red">请配置密码区域HTML！</strong></div>';
             if ($value['isMarkdown']) $placeholder = "\n!!!\n{$placeholder}\n!!!\n";
+            $hasher = new PasswordHash(8, true);
             $value['text'] = preg_replace_callback(
                 '/' . self::getShortcodeRegex('ppblock') . '/',
-                function($matches) use ($contents, $value, $pwds, $mod, $placeholder) {
+                function($matches) use ($contents, $value, $pwds, $mod, $placeholder, $hasher) {
                     static $count = 0;
                     if ($matches[1] == '[' && $matches[6] == ']') return substr($matches[0], 1, -1); // 不解析类似 [[ppblock]] 双重括号的代码
                     $now = $count % $mod;
@@ -190,7 +207,7 @@ TEXT;
                     $inner = $matches[5];
                     if ($pwds[$now] == '') return $inner;
                     $input = self::getRequestPassword($value['cid'], $now, $contents->cid);
-                    if ($input && $input === $pwds[$now]) return $inner;
+                    if ($input && $hasher->CheckPassword($pwds[$now], $input)) return $inner;
                     else {
                         $placeholder = str_replace(
                             array('{id}', '{uniqueId}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
@@ -233,7 +250,7 @@ TEXT;
             NULL,
             '',
             _t('分隔符'),
-            '用于分隔多个密码。例如填写<code>|</code>作为分隔符，填写<code>114514|1919|810</code>作为密码，则表示依次定义了三个密码：<code>114514</code> <code>1919</code> <code>810</code>。不填写分隔符默认只定义一个密码。'
+            '用于分隔多个密码。例如填写 <code>|</code> 作为分隔符，填写 <code>114514|1919|810</code> 作为密码，则表示依次定义了三个密码：<code>114514</code> <code>1919</code> <code>810</code>。不填写分隔符默认只定义一个密码。'
         ));
     }
 
@@ -250,7 +267,12 @@ TEXT;
         if ($archive->fields->pp_isEnabled && $archive->request->isPost() && isset($archive->request->partiallyPassword)) {
             $pid = isset($archive->request->pid) ? intval($archive->request->pid) : 0;
             if ($pid < 0) return;
-            Typecho_Cookie::set("partiallyPassword_{$archive->cid}_{$pid}", md5($archive->request->partiallyPassword));
+            if (@Helper::options()->plugin('PartiallyPassword')->checkReferer)
+                if (stripos($archive->request->getReferer(), Helper::options()->rootUrl) !== 0) return;
+            Typecho_Cookie::set(
+                "partiallyPassword_{$archive->cid}_{$pid}",
+                (new PasswordHash(8, true))->HashPassword($archive->request->partiallyPassword)
+            );
         }
     }
 
