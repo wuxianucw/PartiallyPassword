@@ -5,7 +5,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 
  * @package PartiallyPassword
  * @author wuxianucw
- * @version 2.0.1
+ * @version 2.0.2
  * @link https://ucw.moe
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
