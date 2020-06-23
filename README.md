@@ -93,12 +93,12 @@ end
 - [x] ~~寻找一个方案可以直接操作 `$widget->text` 取出的内容，实现完美屏蔽。~~ 已经更改为在 `Widget_Abstract_Contents` 的 `filter` 下挂接插件实现方法，这样操作后从 Widget 中取出的数据已经全部进行了过滤，除非直接读取数据库，否则理论上不存在加密区块不解析的情形。（Since v2.0.0）
 - [x] ~~现有的鉴权逻辑较为不完善，应增加提交密码时的后端相关处理，并合理优化流程。~~ 已经完全交由后端处理 Cookie，流程变更为直接向文章页面 POST 数据。（Since v2.0.0）
 - [x] ~~默认外观需要优化，包括样式和插入位置。~~ 已经完成优化，现在的默认样式是一套极简风格的密码输入框。（Since v1.1.1）公共 HTML 的插入位置变更为页头和页脚。（Since v2.0.0）
-- [ ] 考虑增加加密区块语法支持，后续将可能支持更加复杂的语法。具体方案暂时未定。
+- [x] ~~考虑增加加密区块语法支持，后续将可能支持更加复杂的语法。具体方案暂时未定。~~ 新增 `ppswitch` 语法，能够实现不同密码对应不同内容（#2）。（Since v3.0.0）
 
 ## In Progress
 
-- JSON 密码组方案
-- 不同密码对应不同内容（#2）
+- 完善 README
+- 暂时没了，咕咕咕
 
 ## Changelog
 
@@ -109,20 +109,20 @@ end
 - `ppblock` 加密块中内容默认 `trim` 一次。（2020.06.23）
 - 采用 JSON 密码组方案，新增 `pwd` 命名密码参数，废弃模数循环。（2020.06.23）
 - 废弃模板变量 `uniqueId`，因为它现在与 `id` 完全一致。该变量自 v3.0.0 起移除，v2.x 不受影响。
+- 新增 `ppswitch` 语法，能够实现不同密码对应不同内容（#2）。
 
 ## Note
 
 ### 2020-06-23
 
-设计了一套不同密码对应不同内容（#2）的语法（未实现，未确定，不在计划内），大致框架形如：
+设计了一套不同密码对应不同内容（#2）的语法 ~~（未实现，未确定，不在计划内）~~ ，大致框架形如：
 
 ```text
 outside
 [ppswitch]
 inside
-[case]xxx[/case]
-[case]yyy[/case]
-[default]zzz[/default]
+[case pwd="x"]xxx[/case]
+[case pwd="y"]yyy[/case]
 [/ppswitch]
 ```
 
@@ -162,10 +162,10 @@ xxx
 
 ```text
 AAA
-[ppblock pwd="test"]BBB[/ppblock] // uniqueId = 0
-[ppblock pwd="test"]CCC[/ppblock] // uniqueId = 1
-[ppblock]DDD[/ppblock]            // uniqueId = 2
-[ppblock]EEE[/ppblock]            // uniqueId = 3
+[ppblock pwd="test"]BBB[/ppblock] // id = 0
+[ppblock pwd="test"]CCC[/ppblock] // id = 1
+[ppblock]DDD[/ppblock]            // id = 2
+[ppblock]EEE[/ppblock]            // id = 3
 ```
 
 密码的寻找逻辑为：
@@ -176,7 +176,7 @@ AAA
 2. 寻找 JSON 中是否有索引为 `pwd` 的值的项目
     - 是，使用该项目作为当前块的密码，结束 ↓
     - 否，从第 4 步继续后续操作 →
-3. 寻找 JSON 中是否有索引为 `uniqueId` 的值的项目
+3. 寻找 JSON 中是否有索引为 `id` 的值的项目
     - 是，使用该项目作为当前块的密码，结束 ↓
     - 否，从第 4 步继续后续操作 →
 4. 寻找 JSON 中是否有索引为 `fallback` 的项目
@@ -212,3 +212,18 @@ AAA
 展现与上例相同。（废弃模数循环，这样一来 `uniqueId` 将与 `id` 完全相同）
 
 这似乎是个很好的 idea，考虑在 v3.0.0 版本中将其实现，同时继续维护 v2.x 版本。
+
+已实现 JSON 方案，现在还需要一个 v2 到 v3 的密码组配置转换器。
+
+已实现 `ppswitch` 语法，但废除了前面提到的 `default` 语法。同时，`ppswitch` 与现有的 `ppblock` 共用一套 `id` 系统。
+
+```text
+[ppblock]AAA[/ppblock]       // id = 0
+[ppswitch]                   // id = 1
+[case pwd="case1"]BBB[/case]
+[case pwd="case2"]CCC[/case]
+[/ppswitch]
+[ppblock]DDD[/ppblock]       // id = 2
+```
+
+`case` 必须具有 `pwd` 属性，否则无论如何都不会显示。
