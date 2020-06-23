@@ -83,7 +83,7 @@ TEXT;
         /** 密码区域 HTML */
         $default = <<<TEXT
 <div class="pp-block">
-<form action="{targetUrl}" method="post" style="margin:0;">
+<form action="{targetUrl}" method="post" style="margin: 0;">
 <input name="partiallyPassword" type="password" placeholder="{additionalContent}">
 <input name="pid" type="hidden" value="{id}">
 </form>
