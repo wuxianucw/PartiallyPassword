@@ -188,7 +188,7 @@ TEXT;
             if ($value['isMarkdown']) $placeholder = "\n!!!\n{$placeholder}\n!!!\n";
             $hasher = new PasswordHash(8, true);
             $value['text'] = preg_replace_callback(
-                '/' . self::getShortcodeRegex('ppblock') . '/',
+                '/' . self::getShortcodeRegex(array('ppblock', 'ppswitch')) . '/',
                 function($matches) use ($contents, $value, $pwds, $placeholder, $hasher) {
                     static $id = -1;
                     if ($matches[1] == '[' && $matches[6] == ']') return substr($matches[0], 1, -1); // 不解析类似 [[ppblock]] 双重括号的代码
@@ -200,6 +200,41 @@ TEXT;
                         if (isset($attrs['ex'])) $ex = $attrs['ex'];
                         if (isset($attrs['pwd'])) $pwd_idx = $attrs['pwd'];
                     }
+                    $inner = trim($matches[5]);
+                    $input = self::getRequestPassword($value['cid'], $id, $contents->cid);
+                    if (!$input) {
+                        $placeholder = str_replace(
+                            array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
+                            array($id, $value['permalink'], $ex, $value['permalink']),
+                            $placeholder
+                        );
+                        return $placeholder;
+                    }
+                    if ($matches[2] == 'ppswitch') {
+                        $succ = false;
+                        $inner = preg_replace_callback(
+                            '/' . self::getShortcodeRegex(array('case')) . '/',
+                            function($matches) use ($pwds, $input, $hasher, &$succ) {
+                                if ($matches[1] == '[' && $matches[6] == ']') return substr($matches[0], 1, -1);
+                                $attrs = self::shortcodeParseAtts($matches[3]);
+                                if (!isset($attrs['pwd']) || !in_array($attrs['pwd'], array_keys($pwds))) return '';
+                                if ($hasher->CheckPassword($pwds[$attrs['pwd']], $input)) {
+                                    $succ = true;
+                                    return trim($matches[5]);
+                                } else return '';
+                            },
+                            $inner
+                        );
+                        if ($succ) return $inner;
+                        else {
+                            $placeholder = str_replace(
+                                array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
+                                array($id, $value['permalink'], $ex, $value['permalink']),
+                                $placeholder
+                            );
+                            return $placeholder;
+                        }
+                    }
                     if (!in_array($pwd_idx, array_keys($pwds))) {
                         if (isset($pwds['fallback'])) $pwd_idx = 'fallback';
                         else {
@@ -208,9 +243,7 @@ TEXT;
                             return $err;
                         }
                     }
-                    $inner = trim($matches[5]);
-                    $input = self::getRequestPassword($value['cid'], $id, $contents->cid);
-                    if ($input && $hasher->CheckPassword($pwds[$id], $input)) return $inner;
+                    if ($hasher->CheckPassword($pwds[$pwd_idx], $input)) return $inner;
                     else {
                         $placeholder = str_replace(
                             array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
@@ -280,8 +313,8 @@ TEXT;
      * @return string
      * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php
      */
-    protected static function getShortcodeRegex($tagname) {
-        $tagregexp = preg_quote($tagname);
+    protected static function getShortcodeRegex($tagnames) {
+        $tagregexp = implode('|', array_map('preg_quote', $tagnames));
         // WARNING! Do not change this regex without changing do_shortcode_tag() and strip_shortcode_tag()
         // Also, see shortcode_unautop() and shortcode.js.
         // phpcs:disable Squiz.Strings.ConcatenationSpacing.PaddingFound -- don't remove regex indentation
@@ -359,6 +392,13 @@ TEXT;
         return $atts;
     }
 
+    /**
+     * 获取短代码属性正则表达式
+     * 
+     * @access private
+     * @return string
+     * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php
+     */
     private static function getShortcodeAttsRegex() {
         return '/([\w-]+)\s*=\s*"([^"]*)"(?:\s|$)|([\w-]+)\s*=\s*\'([^\']*)\'(?:\s|$)|([\w-]+)\s*=\s*([^\s\'"]+)(?:\s|$)|"([^"]*)"(?:\s|$)|\'([^\']*)\'(?:\s|$)|(\S+)(?:\s|$)/';
     }
