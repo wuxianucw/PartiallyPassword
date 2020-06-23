@@ -5,7 +5,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 
  * @package PartiallyPassword
  * @author wuxianucw
- * @version 2.0.1
+ * @version 3.0.0
  * @link https://ucw.moe
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
@@ -180,38 +180,41 @@ TEXT;
         }
         $fields = new Typecho_Config($fields);
         if ($fields->pp_isEnabled) {
-            @$sep = $fields->pp_sep;
-            @$pwds = $fields->pp_passwords;
-            if ($sep) $pwds = explode($sep, $pwds);
-            else $pwds = array($pwds);
-            $mod = count($pwds);
-            if (!$mod) {
-                $mod = 1;
-                $pwds = array('');
-            }
+            @$pwds = json_decode($fields->pp_passwords, true);
+            if (!is_array($pwds)) $pwds = array();
+            array_map('strval', $pwds);
             @$placeholder = Helper::options()->plugin('PartiallyPassword')->placeholder;
-            if (!$placeholder) $placeholder = '<div><strong style="color:red">请配置密码区域HTML！</strong></div>';
+            if (!$placeholder) $placeholder = '<div><strong style="color:red">请配置密码区域 HTML！</strong></div>';
             if ($value['isMarkdown']) $placeholder = "\n!!!\n{$placeholder}\n!!!\n";
             $hasher = new PasswordHash(8, true);
             $value['text'] = preg_replace_callback(
                 '/' . self::getShortcodeRegex('ppblock') . '/',
-                function($matches) use ($contents, $value, $pwds, $mod, $placeholder, $hasher) {
-                    static $count = 0;
+                function($matches) use ($contents, $value, $pwds, $placeholder, $hasher) {
+                    static $id = -1;
                     if ($matches[1] == '[' && $matches[6] == ']') return substr($matches[0], 1, -1); // 不解析类似 [[ppblock]] 双重括号的代码
-                    $now = $count % $mod;
-                    $count++;
-                    $attr = htmlspecialchars_decode($matches[3]); // 还原转义前的参数列表
-                    $attrs = self::shortcodeParseAtts($attr); // 获取短代码的参数
+                    $id++;
+                    $attrs = self::shortcodeParseAtts($matches[3]); // 获取短代码的参数
                     $ex = '';
-                    if (is_array($attrs) && isset($attrs['ex'])) $ex = $attrs['ex'];
-                    $inner = $matches[5];
-                    if ($pwds[$now] == '') return $inner;
-                    $input = self::getRequestPassword($value['cid'], $now, $contents->cid);
-                    if ($input && $hasher->CheckPassword($pwds[$now], $input)) return $inner;
+                    $pwd_idx = strval($id);
+                    if (is_array($attrs)) {
+                        if (isset($attrs['ex'])) $ex = $attrs['ex'];
+                        if (isset($attrs['pwd'])) $pwd_idx = $attrs['pwd'];
+                    }
+                    if (!in_array($pwd_idx, array_keys($pwds))) {
+                        if (isset($pwds['fallback'])) $pwd_idx = 'fallback';
+                        else {
+                            $err = "<div><strong style=\"color:red\">错误：id = {$id} 的加密块未设置密码！</strong></div>";
+                            if ($value['isMarkdown']) $err = "\n!!!\n{$err}\n!!!\n";
+                            return $err;
+                        }
+                    }
+                    $inner = trim($matches[5]);
+                    $input = self::getRequestPassword($value['cid'], $id, $contents->cid);
+                    if ($input && $hasher->CheckPassword($pwds[$id], $input)) return $inner;
                     else {
                         $placeholder = str_replace(
-                            array('{id}', '{uniqueId}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
-                            array($now, $count - 1, $value['permalink'], $ex, $value['permalink']),
+                            array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
+                            array($id, $value['permalink'], $ex, $value['permalink']),
                             $placeholder
                         );
                         return $placeholder;
@@ -238,19 +241,12 @@ TEXT;
             _t('是否开启文章部分加密'),
             '是否对这篇文章启用部分加密功能'
         ));
-        $layout->addItem(new Typecho_Widget_Helper_Form_Element_Text(
+        $layout->addItem(new Typecho_Widget_Helper_Form_Element_Textarea(
             'pp_passwords',
             NULL,
             '',
-            _t('密码'),
-            '按照文章中调用的顺序定义密码，如果需要多个密码，请在下面定义一个分隔符，然后在相邻密码间用分隔符分隔。详细例子将在下方给出。'
-        ));
-        $layout->addItem(new Typecho_Widget_Helper_Form_Element_Text(
-            'pp_sep',
-            NULL,
-            '',
-            _t('分隔符'),
-            '用于分隔多个密码。例如填写 <code>|</code> 作为分隔符，填写 <code>114514|1919|810</code> 作为密码，则表示依次定义了三个密码：<code>114514</code> <code>1919</code> <code>810</code>。不填写分隔符默认只定义一个密码。'
+            _t('密码组'),
+            'JSON 格式的密码组，参考 <a href="https://github.com/wuxianucw/PartiallyPassword/blob/master/README.md" target="_blank">README</a>'
         ));
     }
 
