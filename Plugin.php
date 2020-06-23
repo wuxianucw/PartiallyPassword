@@ -92,11 +92,10 @@ TEXT;
         $tips = <<<TEXT
 密码区域的HTML。可以使用的变量包括：
 <ul>
-<li><code>{id}</code>：当前页面加密区块编号</li>
-<li><code>{uniqueId}</code>：当前页面加密区块唯一编号</li>
+<li><code>{id}</code>：当前加密块 ID</li>
 <li><code>{additionalContent}</code>：附加信息</li>
-<li><code>{currentPage}</code>：当前页面URL</li>
-<li><code>{targetUrl}</code>：POST提交接口页面URL</li>
+<li><code>{currentPage}</code>：当前页面 URL</li>
+<li><code>{targetUrl}</code>：POST 提交接口页面URL</li>
 </ul>
 TEXT;
         $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('placeholder', NULL, $default, _t('密码区域 HTML'), $tips));
