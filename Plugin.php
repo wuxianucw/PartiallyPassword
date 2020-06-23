@@ -211,7 +211,7 @@ TEXT;
                     else {
                         $placeholder = str_replace(
                             array('{id}', '{uniqueId}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
-                            array($now, $count, $value['permalink'], $ex, $value['permalink']),
+                            array($now, $count - 1, $value['permalink'], $ex, $value['permalink']),
                             $placeholder
                         );
                         return $placeholder;
