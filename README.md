@@ -108,8 +108,8 @@ end
 - 允许空密码。（2020.06.23）
 - `ppblock` 加密块中内容默认 `trim` 一次。（2020.06.23）
 - 采用 JSON 密码组方案，新增 `pwd` 命名密码参数，废弃模数循环。（2020.06.23）
-- 废弃模板变量 `uniqueId`，因为它现在与 `id` 完全一致。该变量自 v3.0.0 起移除，v2.x 不受影响。
-- 新增 `ppswitch` 语法，能够实现不同密码对应不同内容（[#2](https://github.com/wuxianucw/PartiallyPassword/issues/2)）。
+- 废弃模板变量 `uniqueId`，因为它现在与 `id` 完全一致。该变量自 v3.0.0 起移除，v2.x 不受影响。（2020.06.23）
+- 新增 `ppswitch` 语法，能够实现不同密码对应不同内容（[#2](https://github.com/wuxianucw/PartiallyPassword/issues/2)）。（2020.06.23）
 
 ## Note
 
