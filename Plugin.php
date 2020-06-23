@@ -10,7 +10,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
     /**
-     * 激活插件方法,如果激活失败,直接抛出异常
+     * 激活插件
      * 
      * @access public
      * @return void
@@ -25,7 +25,7 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
     }
     
     /**
-     * 禁用插件方法,如果禁用失败,直接抛出异常
+     * 禁用插件
      * 
      * @static
      * @access public
@@ -278,7 +278,7 @@ TEXT;
      * @access protected
      * @param string $tagnames
      * @return string
-     * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php#L254
+     * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php
      */
     protected static function getShortcodeRegex($tagname) {
         $tagregexp = preg_quote($tagname);
@@ -323,7 +323,7 @@ TEXT;
      * @access protected
      * @param $text
      * @return array|string
-     * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php#L508
+     * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php
      */
     protected static function shortcodeParseAtts($text) {
         $atts = array();
