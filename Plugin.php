@@ -201,15 +201,15 @@ TEXT;
                     }
                     $inner = trim($matches[5]);
                     $input = self::getRequestPassword($value['cid'], $id, $contents->cid);
-                    if (!$input) {
-                        $placeholder = str_replace(
-                            array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
-                            array($id, $value['permalink'], $ex, $value['permalink']),
-                            $placeholder
-                        );
-                        return $placeholder;
-                    }
                     if ($matches[2] == 'ppswitch') {
+                        if (!$input) {
+                            $placeholder = str_replace(
+                                array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
+                                array($id, $value['permalink'], $ex, $value['permalink']),
+                                $placeholder
+                            );
+                            return $placeholder;
+                        }
                         $succ = false;
                         $inner = preg_replace_callback(
                             '/' . self::getShortcodeRegex(array('case')) . '/',
@@ -242,7 +242,7 @@ TEXT;
                             return $err;
                         }
                     }
-                    if ($hasher->CheckPassword($pwds[$pwd_idx], $input)) return $inner;
+                    if ($input && $hasher->CheckPassword($pwds[$pwd_idx], $input)) return $inner;
                     else {
                         $placeholder = str_replace(
                             array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
