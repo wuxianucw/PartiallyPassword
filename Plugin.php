@@ -5,7 +5,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 
  * @package PartiallyPassword
  * @author wuxianucw
- * @version 2.0.2
+ * @version 2.0.3
  * @link https://ucw.moe
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
@@ -83,7 +83,7 @@ TEXT;
         /** 密码区域 HTML */
         $default = <<<TEXT
 <div class="pp-block">
-<form action="{targetUrl}" method="post" style="margin:0;">
+<form action="{targetUrl}" method="post" style="margin: 0;">
 <input name="partiallyPassword" type="password" placeholder="{additionalContent}">
 <input name="pid" type="hidden" value="{id}">
 </form>
@@ -92,11 +92,11 @@ TEXT;
         $tips = <<<TEXT
 密码区域的HTML。可以使用的变量包括：
 <ul>
-<li><code>{id}</code>：当前页面加密区块编号</li>
-<li><code>{uniqueId}</code>：当前页面加密区块唯一编号</li>
+<li><code>{id}</code>：当前页面加密块编号</li>
+<li><code>{uniqueId}</code>：当前页面加密块唯一编号</li>
 <li><code>{additionalContent}</code>：附加信息</li>
-<li><code>{currentPage}</code>：当前页面URL</li>
-<li><code>{targetUrl}</code>：POST提交接口页面URL</li>
+<li><code>{currentPage}</code>：当前页面 URL</li>
+<li><code>{targetUrl}</code>：POST 提交接口页面URL</li>
 </ul>
 TEXT;
         $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('placeholder', NULL, $default, _t('密码区域 HTML'), $tips));
@@ -190,18 +190,17 @@ TEXT;
                 $pwds = array('');
             }
             @$placeholder = Helper::options()->plugin('PartiallyPassword')->placeholder;
-            if (!$placeholder) $placeholder = '<div><strong style="color:red">请配置密码区域HTML！</strong></div>';
+            if (!$placeholder) $placeholder = '<div><strong style="color:red">请配置密码区域 HTML！</strong></div>';
             if ($value['isMarkdown']) $placeholder = "\n!!!\n{$placeholder}\n!!!\n";
             $hasher = new PasswordHash(8, true);
             $value['text'] = preg_replace_callback(
                 '/' . self::getShortcodeRegex('ppblock') . '/',
                 function($matches) use ($contents, $value, $pwds, $mod, $placeholder, $hasher) {
-                    static $count = 0;
+                    static $count = -1;
                     if ($matches[1] == '[' && $matches[6] == ']') return substr($matches[0], 1, -1); // 不解析类似 [[ppblock]] 双重括号的代码
-                    $now = $count % $mod;
                     $count++;
-                    $attr = htmlspecialchars_decode($matches[3]); // 还原转义前的参数列表
-                    $attrs = self::shortcodeParseAtts($attr); // 获取短代码的参数
+                    $now = $count % $mod;
+                    $attrs = self::shortcodeParseAtts($matches[3]); // 获取短代码的参数
                     $ex = '';
                     if (is_array($attrs) && isset($attrs['ex'])) $ex = $attrs['ex'];
                     $inner = $matches[5];
