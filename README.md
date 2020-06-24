@@ -24,13 +24,15 @@ git clone -b master --single-branch https://github.com/wuxianucw/PartiallyPasswo
 
 #### 全新安装
 
-启用插件，即完成全部初始化工作。默认配置是一套非常简单的演示样式，建议根据主题特性进行自定义修改。
+启用插件，即完成全部初始化工作。默认配置是一套极简风格的密码输入框，你也可以根据主题特性进行自定义修改。
 
 #### 从旧版本升级
 
 首先备份插件配置（手动将其拷贝到文本文档中等方法），然后禁用旧版本插件。用新版本插件文件覆盖旧版本插件文件，再启用新版本并从备份中恢复配置。
 
 **注意：** 如果旧版本是 v2.x 版本，请在删除插件目录下的 `upgrade.lock` 文件后运行一次 `Upgrade.php`（在浏览器中打开 `http(s)://你的博客地址/usr/plugins/PartiallyPassword/Upgrade.php`），它将会自动升级 v2.x 的文章自定义字段配置到 v3 配置（JSON 方案）。
+
+**确认无误后** ，删除 `Upgrade.php`，保留脚本自动创建的 `upgrade.lock` 以防止误操作，并将 `upgrade.log` 拷贝到其他位置备用。如果在执行脚本中遇到问题（`Error`、`Exception` 字样），请提出 issue（类型为 `Bug report`）并附带上 `upgrade.log`。
 
 ### 调用方法举例
 
