@@ -5,12 +5,12 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 
  * @package PartiallyPassword
  * @author wuxianucw
- * @version 2.0.3
+ * @version 3.0.0
  * @link https://ucw.moe
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
     /**
-     * 激活插件方法,如果激活失败,直接抛出异常
+     * 激活插件
      * 
      * @access public
      * @return void
@@ -25,7 +25,7 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
     }
     
     /**
-     * 禁用插件方法,如果禁用失败,直接抛出异常
+     * 禁用插件
      * 
      * @static
      * @access public
@@ -92,8 +92,7 @@ TEXT;
         $tips = <<<TEXT
 密码区域的HTML。可以使用的变量包括：
 <ul>
-<li><code>{id}</code>：当前页面加密块编号</li>
-<li><code>{uniqueId}</code>：当前页面加密块唯一编号</li>
+<li><code>{id}</code>：当前加密块 ID</li>
 <li><code>{additionalContent}</code>：附加信息</li>
 <li><code>{currentPage}</code>：当前页面 URL</li>
 <li><code>{targetUrl}</code>：POST 提交接口页面URL</li>
@@ -180,37 +179,74 @@ TEXT;
         }
         $fields = new Typecho_Config($fields);
         if ($fields->pp_isEnabled) {
-            @$sep = $fields->pp_sep;
-            @$pwds = $fields->pp_passwords;
-            if ($sep) $pwds = explode($sep, $pwds);
-            else $pwds = array($pwds);
-            $mod = count($pwds);
-            if (!$mod) {
-                $mod = 1;
-                $pwds = array('');
-            }
+            @$pwds = json_decode($fields->pp_passwords, true);
+            if (!is_array($pwds)) $pwds = array();
+            array_map('strval', $pwds);
             @$placeholder = Helper::options()->plugin('PartiallyPassword')->placeholder;
             if (!$placeholder) $placeholder = '<div><strong style="color:red">请配置密码区域 HTML！</strong></div>';
             if ($value['isMarkdown']) $placeholder = "\n!!!\n{$placeholder}\n!!!\n";
             $hasher = new PasswordHash(8, true);
             $value['text'] = preg_replace_callback(
-                '/' . self::getShortcodeRegex('ppblock') . '/',
-                function($matches) use ($contents, $value, $pwds, $mod, $placeholder, $hasher) {
-                    static $count = -1;
+                '/' . self::getShortcodeRegex(array('ppblock', 'ppswitch')) . '/',
+                function($matches) use ($contents, $value, $pwds, $placeholder, $hasher) {
+                    static $id = -1;
                     if ($matches[1] == '[' && $matches[6] == ']') return substr($matches[0], 1, -1); // 不解析类似 [[ppblock]] 双重括号的代码
-                    $count++;
-                    $now = $count % $mod;
+                    $id++;
                     $attrs = self::shortcodeParseAtts($matches[3]); // 获取短代码的参数
                     $ex = '';
-                    if (is_array($attrs) && isset($attrs['ex'])) $ex = $attrs['ex'];
-                    $inner = $matches[5];
-                    if ($pwds[$now] == '') return $inner;
-                    $input = self::getRequestPassword($value['cid'], $now, $contents->cid);
-                    if ($input && $hasher->CheckPassword($pwds[$now], $input)) return $inner;
+                    $pwd_idx = strval($id);
+                    if (is_array($attrs)) {
+                        if (isset($attrs['ex'])) $ex = $attrs['ex'];
+                        if (isset($attrs['pwd'])) $pwd_idx = $attrs['pwd'];
+                    }
+                    $inner = trim($matches[5]);
+                    $input = self::getRequestPassword($value['cid'], $id, $contents->cid);
+                    if ($matches[2] == 'ppswitch') {
+                        if (!$input) {
+                            $placeholder = str_replace(
+                                array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
+                                array($id, $value['permalink'], $ex, $value['permalink']),
+                                $placeholder
+                            );
+                            return $placeholder;
+                        }
+                        $succ = false;
+                        $inner = preg_replace_callback(
+                            '/' . self::getShortcodeRegex(array('case')) . '/',
+                            function($matches) use ($pwds, $input, $hasher, &$succ) {
+                                if ($matches[1] == '[' && $matches[6] == ']') return substr($matches[0], 1, -1);
+                                $attrs = self::shortcodeParseAtts($matches[3]);
+                                if (!isset($attrs['pwd']) || !in_array($attrs['pwd'], array_keys($pwds))) return '';
+                                if ($hasher->CheckPassword($pwds[$attrs['pwd']], $input)) {
+                                    $succ = true;
+                                    return trim($matches[5]);
+                                } else return '';
+                            },
+                            $inner
+                        );
+                        if ($succ) return $inner;
+                        else {
+                            $placeholder = str_replace(
+                                array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
+                                array($id, $value['permalink'], $ex, $value['permalink']),
+                                $placeholder
+                            );
+                            return $placeholder;
+                        }
+                    }
+                    if (!in_array($pwd_idx, array_keys($pwds))) {
+                        if (isset($pwds['fallback'])) $pwd_idx = 'fallback';
+                        else {
+                            $err = "<div><strong style=\"color:red\">错误：id = {$id} 的加密块未设置密码！</strong></div>";
+                            if ($value['isMarkdown']) $err = "\n!!!\n{$err}\n!!!\n";
+                            return $err;
+                        }
+                    }
+                    if ($input && $hasher->CheckPassword($pwds[$pwd_idx], $input)) return $inner;
                     else {
                         $placeholder = str_replace(
-                            array('{id}', '{uniqueId}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
-                            array($now, $count, $value['permalink'], $ex, $value['permalink']),
+                            array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
+                            array($id, $value['permalink'], $ex, $value['permalink']),
                             $placeholder
                         );
                         return $placeholder;
@@ -237,19 +273,12 @@ TEXT;
             _t('是否开启文章部分加密'),
             '是否对这篇文章启用部分加密功能'
         ));
-        $layout->addItem(new Typecho_Widget_Helper_Form_Element_Text(
+        $layout->addItem(new Typecho_Widget_Helper_Form_Element_Textarea(
             'pp_passwords',
             NULL,
             '',
-            _t('密码'),
-            '按照文章中调用的顺序定义密码，如果需要多个密码，请在下面定义一个分隔符，然后在相邻密码间用分隔符分隔。详细例子将在下方给出。'
-        ));
-        $layout->addItem(new Typecho_Widget_Helper_Form_Element_Text(
-            'pp_sep',
-            NULL,
-            '',
-            _t('分隔符'),
-            '用于分隔多个密码。例如填写 <code>|</code> 作为分隔符，填写 <code>114514|1919|810</code> 作为密码，则表示依次定义了三个密码：<code>114514</code> <code>1919</code> <code>810</code>。不填写分隔符默认只定义一个密码。'
+            _t('密码组'),
+            'JSON 格式的密码组，参考 <a href="https://github.com/wuxianucw/PartiallyPassword/blob/master/README.md" target="_blank">README</a>'
         ));
     }
 
@@ -281,10 +310,10 @@ TEXT;
      * @access protected
      * @param string $tagnames
      * @return string
-     * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php#L254
+     * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php
      */
-    protected static function getShortcodeRegex($tagname) {
-        $tagregexp = preg_quote($tagname);
+    protected static function getShortcodeRegex($tagnames) {
+        $tagregexp = implode('|', array_map('preg_quote', $tagnames));
         // WARNING! Do not change this regex without changing do_shortcode_tag() and strip_shortcode_tag()
         // Also, see shortcode_unautop() and shortcode.js.
         // phpcs:disable Squiz.Strings.ConcatenationSpacing.PaddingFound -- don't remove regex indentation
@@ -326,7 +355,7 @@ TEXT;
      * @access protected
      * @param $text
      * @return array|string
-     * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php#L508
+     * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php
      */
     protected static function shortcodeParseAtts($text) {
         $atts = array();
@@ -362,6 +391,13 @@ TEXT;
         return $atts;
     }
 
+    /**
+     * 获取短代码属性正则表达式
+     * 
+     * @access private
+     * @return string
+     * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php
+     */
     private static function getShortcodeAttsRegex() {
         return '/([\w-]+)\s*=\s*"([^"]*)"(?:\s|$)|([\w-]+)\s*=\s*\'([^\']*)\'(?:\s|$)|([\w-]+)\s*=\s*([^\s\'"]+)(?:\s|$)|"([^"]*)"(?:\s|$)|\'([^\']*)\'(?:\s|$)|(\S+)(?:\s|$)/';
     }
