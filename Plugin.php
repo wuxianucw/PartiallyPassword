@@ -129,7 +129,7 @@ TEXT;
      * @param Widget_Archive $archive
      * @return void
      */
-    public static function header($header,Widget_Archive $archive) {
+    public static function header($header, Widget_Archive $archive) {
         @$header_html = Helper::options()->plugin('PartiallyPassword')->header;
         if ($header_html) echo $header_html;
     }
