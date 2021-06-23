@@ -2,16 +2,16 @@
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 /**
  * 文章部分加密
- * 
+ *
  * @package PartiallyPassword
  * @author wuxianucw
- * @version 3.0.0
+ * @version 3.1.0
  * @link https://ucw.moe
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
     /**
      * 激活插件
-     * 
+     *
      * @access public
      * @return void
      * @throws Typecho_Plugin_Exception
@@ -23,20 +23,20 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
         Typecho_Plugin::factory('Widget_Archive')->header = array('PartiallyPassword_Plugin', 'header');
         Typecho_Plugin::factory('Widget_Archive')->footer = array('PartiallyPassword_Plugin', 'footer');
     }
-    
+
     /**
      * 禁用插件
-     * 
+     *
      * @static
      * @access public
      * @return void
      * @throws Typecho_Plugin_Exception
      */
     public static function deactivate() {}
-    
+
     /**
      * 获取插件配置面板
-     * 
+     *
      * @access public
      * @param Typecho_Widget_Helper_Form $form 配置面板
      * @return void
@@ -49,6 +49,17 @@ class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
             1,
             _t('Referer 检查'),
             '若开启，将对每个密码请求进行 Referer 检查。'
+        ));
+
+        /** 额外 Markdown 标记 */
+        $form->addInput(new Typecho_Widget_Helper_Form_Element_Select(
+            'extraMdToken',
+            array(0 => '开启', 1 => '关闭'),
+            0,
+            _t('额外 Markdown 标记'),
+            '若开启，对于 Markdown 格式的文章，将在每个加密块首尾插入 <code>!!!</code> 标记。本配置为兼容性配置，' .
+            '对于 Typecho 1.1 默认的 HyperDown 解析器，需要保持开启以确保 HTML 生效。如果您在使用过程中发现加密块' .
+            '前后有多余的 <code>!!!</code> 标记，请尝试将本配置项设置为关闭。'
         ));
 
         /** 自定义页头 HTML */
@@ -100,19 +111,19 @@ TEXT;
 TEXT;
         $form->addInput(new Typecho_Widget_Helper_Form_Element_Textarea('placeholder', NULL, $default, _t('密码区域 HTML'), $tips));
     }
-    
+
     /**
      * 个人用户的配置面板
-     * 
+     *
      * @access public
      * @param Typecho_Widget_Helper_Form $form
      * @return void
      */
     public static function personalConfig(Typecho_Widget_Helper_Form $form) {}
-    
+
     /**
      * 自定义输出header
-     * 
+     *
      * @access public
      * @param string $header
      * @param Widget_Archive $archive
@@ -125,7 +136,7 @@ TEXT;
 
     /**
      * 自定义输出footer
-     * 
+     *
      * @access public
      * @param Widget_Archive $archive
      * @return void
@@ -137,7 +148,7 @@ TEXT;
 
     /**
      * 取得请求发送的密码
-     * 
+     *
      * @access private
      * @param mixed $cid
      * @param mixed $pid
@@ -155,10 +166,10 @@ TEXT;
         }
         return Typecho_Cookie::get("partiallyPassword_{$cid}_{$pid}", '');
     }
-    
+
     /**
      * 插件实现方法
-     * 
+     *
      * @access public
      * @param array $value
      * @param Widget_Abstract_Contents $contents
@@ -182,13 +193,15 @@ TEXT;
             @$pwds = json_decode($fields->pp_passwords, true);
             if (!is_array($pwds)) $pwds = array();
             array_map('strval', $pwds);
-            @$placeholder = Helper::options()->plugin('PartiallyPassword')->placeholder;
+            $options = Helper::options()->plugin('PartiallyPassword');
+            $placeholder = isset($options->placeholder) ? $options->placeholder : '';
+            $extraMdToken = isset($options->extraMdToken) ? $options->extraMdToken : 0;
             if (!$placeholder) $placeholder = '<div><strong style="color:red">请配置密码区域 HTML！</strong></div>';
-            if ($value['isMarkdown']) $placeholder = "\n!!!\n{$placeholder}\n!!!\n";
+            if ($value['isMarkdown'] && $extraMdToken === 0) $placeholder = "\n!!!\n{$placeholder}\n!!!\n";
             $hasher = new PasswordHash(8, true);
             $value['text'] = preg_replace_callback(
                 '/' . self::getShortcodeRegex(array('ppblock', 'ppswitch')) . '/',
-                function($matches) use ($contents, $value, $pwds, $placeholder, $hasher) {
+                function($matches) use ($contents, $value, $pwds, $placeholder, $extraMdToken, $hasher) {
                     static $id = -1;
                     if ($matches[1] == '[' && $matches[6] == ']') return substr($matches[0], 1, -1); // 不解析类似 [[ppblock]] 双重括号的代码
                     $id++;
@@ -238,7 +251,7 @@ TEXT;
                         if (isset($pwds['fallback'])) $pwd_idx = 'fallback';
                         else {
                             $err = "<div><strong style=\"color:red\">错误：id = {$id} 的加密块未设置密码！</strong></div>";
-                            if ($value['isMarkdown']) $err = "\n!!!\n{$err}\n!!!\n";
+                            if ($value['isMarkdown'] && $extraMdToken === 0) $err = "\n!!!\n{$err}\n!!!\n";
                             return $err;
                         }
                     }
@@ -260,7 +273,7 @@ TEXT;
 
     /**
      * 插件自定义字段
-     * 
+     *
      * @access public
      * @param mixed $layout
      * @return void
@@ -284,7 +297,7 @@ TEXT;
 
     /**
      * 处理密码提交
-     * 
+     *
      * @access public
      * @param Widget_Archive $archive
      * @param Typecho_Db_Query $select
@@ -306,7 +319,7 @@ TEXT;
 
     /**
      * 获取匹配短代码的正则表达式
-     * 
+     *
      * @access protected
      * @param string $tagnames
      * @return string
@@ -351,7 +364,7 @@ TEXT;
 
     /**
      * 获取短代码属性数组
-     * 
+     *
      * @access protected
      * @param $text
      * @return array|string
@@ -393,7 +406,7 @@ TEXT;
 
     /**
      * 获取短代码属性正则表达式
-     * 
+     *
      * @access private
      * @return string
      * @link https://github.com/WordPress/WordPress/blob/master/wp-includes/shortcodes.php
