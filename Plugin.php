@@ -5,7 +5,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  *
  * @package PartiallyPassword
  * @author wuxianucw
- * @version 3.1.0
+ * @version 3.1.1
  * @link https://ucw.moe
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
@@ -195,7 +195,7 @@ TEXT;
             array_map('strval', $pwds);
             $options = Helper::options()->plugin('PartiallyPassword');
             $placeholder = isset($options->placeholder) ? $options->placeholder : '';
-            $extraMdToken = isset($options->extraMdToken) ? $options->extraMdToken : 0;
+            $extraMdToken = isset($options->extraMdToken) ? intval($options->extraMdToken) : 0;
             if (!$placeholder) $placeholder = '<div><strong style="color:red">请配置密码区域 HTML！</strong></div>';
             if ($value['isMarkdown'] && $extraMdToken === 0) $placeholder = "\n!!!\n{$placeholder}\n!!!\n";
             $hasher = new PasswordHash(8, true);
