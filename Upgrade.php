@@ -3,6 +3,7 @@ ignore_user_abort(true);
 set_time_limit(0);
 header('Content-Type: text/plain; charset=utf-8');
 if (file_exists(__DIR__ . '/upgrade.lock')) die("Script is locked.\n");
+touch(__DIR__ . '/upgrade.lock');
 ob_start();
 $fp = fopen(__DIR__ . '/upgrade.log', 'w');
 function output($text) {
@@ -65,5 +66,4 @@ foreach($rows as $row) {
     output(" -> Done.\n");
 }
 output("==========\n\n");
-touch(__DIR__ . '/upgrade.lock');
 quit("All works completed successfully. For security reasons, the script will be locked.\n");
