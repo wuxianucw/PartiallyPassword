@@ -5,7 +5,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  *
  * @package PartiallyPassword
  * @author wuxianucw
- * @version 3.1.1
+ * @version 3.1.2
  * @link https://ucw.moe
  */
 class PartiallyPassword_Plugin implements Typecho_Plugin_Interface {
@@ -106,6 +106,7 @@ TEXT;
 <li><code>{id}</code>：当前加密块 ID</li>
 <li><code>{additionalContent}</code>：附加信息</li>
 <li><code>{currentPage}</code>：当前页面 URL</li>
+<li><code>{cid}</code>：当前日志 ID</li>
 <li><code>{targetUrl}</code>：POST 提交接口页面URL</li>
 </ul>
 TEXT;
@@ -217,8 +218,8 @@ TEXT;
                     if ($matches[2] == 'ppswitch') {
                         if (!$input) {
                             $placeholder = str_replace(
-                                array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
-                                array($id, $value['permalink'], $ex, $value['permalink']),
+                                array('{id}', '{currentPage}', '{cid}', '{additionalContent}', '{targetUrl}'),
+                                array($id, $value['permalink'], $value['cid'], $ex, $value['permalink']),
                                 $placeholder
                             );
                             return $placeholder;
@@ -240,8 +241,8 @@ TEXT;
                         if ($succ) return $inner;
                         else {
                             $placeholder = str_replace(
-                                array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
-                                array($id, $value['permalink'], $ex, $value['permalink']),
+                                array('{id}', '{currentPage}', '{cid}','{additionalContent}', '{targetUrl}'),
+                                array($id, $value['permalink'], $value['cid'], $ex, $value['permalink']),
                                 $placeholder
                             );
                             return $placeholder;
@@ -258,8 +259,8 @@ TEXT;
                     if ($input && $hasher->CheckPassword($pwds[$pwd_idx], $input)) return $inner;
                     else {
                         $placeholder = str_replace(
-                            array('{id}', '{currentPage}', '{additionalContent}', '{targetUrl}'),
-                            array($id, $value['permalink'], $ex, $value['permalink']),
+                            array('{id}', '{currentPage}', '{cid}', '{additionalContent}', '{targetUrl}'),
+                            array($id, $value['permalink'], $value['cid'], $ex, $value['permalink']),
                             $placeholder
                         );
                         return $placeholder;
