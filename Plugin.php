@@ -94,7 +94,7 @@ TEXT;
         /** 密码区域 HTML */
         $default = <<<TEXT
 <div class="pp-block">
-<form action="{targetUrl}" method="post" style="margin: 0;">
+<form action="{targetUrl}" method="get" style="margin: 0;">
 <input name="partiallyPassword" type="password" placeholder="{additionalContent}">
 <input name="pid" type="hidden" value="{id}">
 </form>
@@ -159,11 +159,11 @@ TEXT;
     private static function getRequestPassword($cid, $pid, $currentCid = -1) {
         if ($currentCid == -1) $currentCid = $cid;
         $request = new Typecho_Request();
-        $request_pid = isset($request->pid) ? intval($request->pid) : 0;
-        if ($request->isPost() && isset($request->partiallyPassword) && $request_pid === $pid) {
+        $request_pid = $request->get('pid') != null ? intval($request->get('pid')) : 0;
+        if ($request->get('pid') != null && $request_pid === $pid) {
             if (@Helper::options()->plugin('PartiallyPassword')->checkReferer)
                 if (stripos($request->getReferer(), Helper::options()->rootUrl) !== 0) return;
-            return (new PasswordHash(8, true))->HashPassword($request->partiallyPassword);
+            return (new PasswordHash(8, true))->HashPassword($request->get('partiallyPassword'));
         }
         return Typecho_Cookie::get("partiallyPassword_{$cid}_{$pid}", '');
     }
@@ -306,14 +306,14 @@ TEXT;
      */
     public static function handleSubmit(Widget_Archive $archive, Typecho_Db_Query $select) {
         if (!$archive->is('page') && !$archive->is('post')) return;
-        if ($archive->fields->pp_isEnabled && $archive->request->isPost() && isset($archive->request->partiallyPassword)) {
-            $pid = isset($archive->request->pid) ? intval($archive->request->pid) : 0;
+        if ($archive->fields->pp_isEnabled && $archive->request->get('partiallyPassword') != null) {
+            $pid = $archive->request->get('pid') != null ? intval($archive->request->get('pid')) : 0;
             if ($pid < 0) return;
             if (@Helper::options()->plugin('PartiallyPassword')->checkReferer)
                 if (stripos($archive->request->getReferer(), Helper::options()->rootUrl) !== 0) return;
             Typecho_Cookie::set(
                 "partiallyPassword_{$archive->cid}_{$pid}",
-                (new PasswordHash(8, true))->HashPassword($archive->request->partiallyPassword)
+                (new PasswordHash(8, true))->HashPassword($archive->request->get('partiallyPassword'))
             );
         }
     }
